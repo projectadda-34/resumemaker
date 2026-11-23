@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useResume } from '../context/ResumeContext';
 import ProgressBar, { STEPS } from '../components/form/ProgressBar';
 import StepPersonal from '../components/form/StepPersonal';
@@ -11,8 +11,10 @@ import TemplateSelector from '../components/TemplateSelector';
 import ClassicTemplate from '../templates/ClassicTemplate';
 import ModernTemplate from '../templates/ModernTemplate';
 import CompactTemplate from '../templates/CompactTemplate';
+import AtsScorePanel from '../components/AtsScorePanel';
 import { exportToDocx } from '../utils/docxExport';
 import { getResumeFileName } from '../utils/textUtils';
+import { calculateAtsScore } from '../utils/atsScorer';
 import {
   ArrowLeft,
   ArrowRight,
@@ -22,16 +24,32 @@ import {
   FileDown,
   FileType,
   Loader2,
-  CheckCircle2
+  Sparkles,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 const Builder = () => {
   const { resumeData, resetResume } = useResume();
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState({});
-  const [mobileTab, setMobileTab] = useState('form'); // 'form' | 'preview'
+  const [mobileTab, setMobileTab] = useState('form'); // 'form' | 'preview' | 'score'
   const [selectedTemplate, setSelectedTemplate] = useState('classic'); // 'classic' | 'modern' | 'compact'
   const [isExportingDocx, setIsExportingDocx] = useState(false);
+  const [showAtsPanel, setShowAtsPanel] = useState(true);
+
+  // Live ATS Score for top bar
+  const atsScore = useMemo(() => {
+    return calculateAtsScore(resumeData).totalScore;
+  }, [resumeData]);
+
+  // Color for score badge
+  const scoreBadgeColor =
+    atsScore >= 80
+      ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'
+      : atsScore >= 55
+      ? 'bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100'
+      : 'bg-rose-50 text-rose-700 border-rose-300 hover:bg-rose-100';
 
   // Basic validation check for step 1
   const validateStep = (step) => {
@@ -86,22 +104,20 @@ const Builder = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Text-based PDF download using browser print dialog with automatic file name
+  // Text-based PDF download
   const handleDownloadPdf = () => {
     const originalTitle = document.title;
     const fileName = getResumeFileName(resumeData.personal.fullName, 'pdf');
-    // Browser uses document.title as default filename in 'Save as PDF'
     document.title = fileName.replace('.pdf', '');
 
     window.print();
 
-    // Restore title after dialog closes
     setTimeout(() => {
       document.title = originalTitle;
     }, 1500);
   };
 
-  // ATS-friendly .docx download using the docx package
+  // ATS-friendly .docx download
   const handleDownloadDocx = async () => {
     try {
       setIsExportingDocx(true);
@@ -124,7 +140,7 @@ const Builder = () => {
             ATS Resume Builder
           </h1>
           <p className="text-xs sm:text-sm text-gray-500">
-            Real-time synchronization. Text-based ATS PDF and DOCX export.
+            Real-time synchronization. Single-column ATS templates with live ATS scoring.
           </p>
         </div>
 
@@ -155,7 +171,31 @@ const Builder = () => {
               <Eye className="w-3.5 h-3.5" />
               <span>Preview</span>
             </button>
+            <button
+              type="button"
+              onClick={() => setMobileTab('score')}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                mobileTab === 'score'
+                  ? 'bg-white text-indigo-600 shadow-2xs'
+                  : 'text-gray-600'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Score ({atsScore})</span>
+            </button>
           </div>
+
+          {/* ATS Score quick pill */}
+          <button
+            type="button"
+            onClick={() => setShowAtsPanel((prev) => !prev)}
+            className={`hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${scoreBadgeColor}`}
+            title="Click to toggle ATS Score & Scanner"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>ATS Score: {atsScore}/100</span>
+            {showAtsPanel ? <ChevronUp className="w-3.5 h-3.5 ml-0.5" /> : <ChevronDown className="w-3.5 h-3.5 ml-0.5" />}
+          </button>
 
           {/* Download PDF Button */}
           <button
@@ -202,7 +242,7 @@ const Builder = () => {
         {/* Left Column: Multi-Step Form */}
         <div
           className={`lg:col-span-6 xl:col-span-6 space-y-6 no-print ${
-            mobileTab === 'preview' ? 'hidden lg:block' : 'block'
+            mobileTab !== 'form' ? 'hidden lg:block' : 'block'
           }`}
         >
           {/* Progress Bar */}
@@ -270,47 +310,19 @@ const Builder = () => {
           </div>
         </div>
 
-        {/* Right Column: Template Selector & Live Resume Preview */}
+        {/* Right Column: ATS Score Panel, Template Selector & Live Resume Preview */}
         <div
           className={`lg:col-span-6 xl:col-span-6 lg:sticky lg:top-20 space-y-4 ${
             mobileTab === 'form' ? 'hidden lg:block' : 'block'
           }`}
         >
-          {/* Top Preview Action Row */}
-          <div className="no-print bg-white rounded-2xl border border-gray-200 p-4 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div>
-              <span className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                Ready for ATS Screening
-              </span>
-              <p className="text-[11px] text-gray-500 mt-0.5">
-                Single-column text layout. No images or unreadable tables.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <button
-                type="button"
-                onClick={handleDownloadPdf}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-2xs"
-              >
-                <FileDown className="w-3.5 h-3.5" />
-                <span>Download PDF</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleDownloadDocx}
-                disabled={isExportingDocx}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-gray-700 bg-gray-50 border border-gray-300 hover:bg-gray-100 transition-colors"
-              >
-                <FileType className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Download DOCX</span>
-              </button>
-            </div>
+          {/* ATS Score Panel (Collapsible on Desktop, shown on mobile if mobileTab === 'score') */}
+          <div className={`no-print ${showAtsPanel || mobileTab === 'score' ? 'block' : 'hidden'}`}>
+            <AtsScorePanel onClose={() => setShowAtsPanel(false)} />
           </div>
 
           {/* Template Selector Card (hidden on print) */}
-          <div className="no-print">
+          <div className={`no-print ${mobileTab === 'score' ? 'hidden sm:block' : 'block'}`}>
             <TemplateSelector
               selectedTemplate={selectedTemplate}
               onSelectTemplate={setSelectedTemplate}
@@ -318,7 +330,7 @@ const Builder = () => {
           </div>
 
           {/* Paper A4 Representation */}
-          <div className="w-full flex justify-center overflow-x-auto pb-4">
+          <div className={`w-full flex justify-center overflow-x-auto pb-4 ${mobileTab === 'score' ? 'hidden sm:flex' : 'flex'}`}>
             <div
               id="resume-preview-container"
               className="bg-white border border-gray-200 shadow-md rounded-xl overflow-hidden w-full transition-all"
