@@ -1,4 +1,8 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { SAMPLE_RESUME_DATA } from '../utils/sampleData';
+
+const STORAGE_KEY_DATA = 'resumemaker_data_v1';
+const STORAGE_KEY_TEMPLATE = 'resumemaker_template_v1';
 
 export const initialResumeState = {
   personal: {
@@ -50,9 +54,51 @@ export const initialResumeState = {
 const ResumeContext = createContext(null);
 
 export const ResumeProvider = ({ children }) => {
-  const [resumeData, setResumeData] = useState(initialResumeState);
+  // Load initial data from localStorage if available
+  const [resumeData, setResumeData] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_DATA);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.warn('Failed to parse resume data from localStorage', e);
+    }
+    return initialResumeState;
+  });
 
-  // Helper functions for updating state
+  // Load selected template from localStorage if available
+  const [selectedTemplate, setSelectedTemplate] = useState(() => {
+    try {
+      const savedTmpl = localStorage.getItem(STORAGE_KEY_TEMPLATE);
+      if (savedTmpl) {
+        return savedTmpl;
+      }
+    } catch (e) {
+      console.warn('Failed to parse template from localStorage', e);
+    }
+    return 'classic';
+  });
+
+  // Persist resumeData to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(resumeData));
+    } catch (e) {
+      console.error('Failed to save resumeData to localStorage', e);
+    }
+  }, [resumeData]);
+
+  // Persist selectedTemplate to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_TEMPLATE, selectedTemplate);
+    } catch (e) {
+      console.error('Failed to save selectedTemplate to localStorage', e);
+    }
+  }, [selectedTemplate]);
+
+  // Personal handlers
   const updatePersonal = (field, value) => {
     setResumeData((prev) => ({
       ...prev,
@@ -63,6 +109,7 @@ export const ResumeProvider = ({ children }) => {
     }));
   };
 
+  // Summary handlers
   const updateSummary = (summary) => {
     setResumeData((prev) => ({
       ...prev,
@@ -145,10 +192,13 @@ export const ResumeProvider = ({ children }) => {
 
   const addSkill = (skill) => {
     if (!skill.trim()) return;
-    setResumeData((prev) => ({
-      ...prev,
-      skills: [...prev.skills, skill.trim()],
-    }));
+    setResumeData((prev) => {
+      if (prev.skills.includes(skill.trim())) return prev;
+      return {
+        ...prev,
+        skills: [...prev.skills, skill.trim()],
+      };
+    });
   };
 
   const removeSkill = (index) => {
@@ -218,8 +268,19 @@ export const ResumeProvider = ({ children }) => {
     }));
   };
 
+  // Load pre-configured sample data for demo
+  const loadSampleData = () => {
+    setResumeData(SAMPLE_RESUME_DATA);
+  };
+
+  // Clear all data
   const resetResume = () => {
     setResumeData(initialResumeState);
+    try {
+      localStorage.removeItem(STORAGE_KEY_DATA);
+    } catch (e) {
+      console.warn(e);
+    }
   };
 
   return (
@@ -227,6 +288,8 @@ export const ResumeProvider = ({ children }) => {
       value={{
         resumeData,
         setResumeData,
+        selectedTemplate,
+        setSelectedTemplate,
         updatePersonal,
         updateSummary,
         addExperience,
@@ -245,6 +308,7 @@ export const ResumeProvider = ({ children }) => {
         addCertification,
         updateCertification,
         removeCertification,
+        loadSampleData,
         resetResume,
       }}
     >

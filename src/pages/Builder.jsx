@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useResume } from '../context/ResumeContext';
 import ProgressBar, { STEPS } from '../components/form/ProgressBar';
 import StepPersonal from '../components/form/StepPersonal';
@@ -13,7 +13,7 @@ import ModernTemplate from '../templates/ModernTemplate';
 import CompactTemplate from '../templates/CompactTemplate';
 import AtsScorePanel from '../components/AtsScorePanel';
 import { exportToDocx } from '../utils/docxExport';
-import { getResumeFileName } from '../utils/textUtils';
+import { getResumeFileName, hasContactInfo } from '../utils/textUtils';
 import { calculateAtsScore } from '../utils/atsScorer';
 import {
   ArrowLeft,
@@ -26,30 +26,54 @@ import {
   Loader2,
   Sparkles,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  FileSpreadsheet,
+  AlertTriangle,
+  X
 } from 'lucide-react';
 
 const Builder = () => {
-  const { resumeData, resetResume } = useResume();
+  const {
+    resumeData,
+    selectedTemplate,
+    setSelectedTemplate,
+    loadSampleData,
+    resetResume
+  } = useResume();
+
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState({});
   const [mobileTab, setMobileTab] = useState('form'); // 'form' | 'preview' | 'score'
-  const [selectedTemplate, setSelectedTemplate] = useState('classic'); // 'classic' | 'modern' | 'compact'
   const [isExportingDocx, setIsExportingDocx] = useState(false);
   const [showAtsPanel, setShowAtsPanel] = useState(true);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  // Page title for SEO & UX
+  useEffect(() => {
+    document.title = 'ATS Resume Builder | ResumeMaker';
+  }, []);
+
+  // Quick helper to show temporary toast
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 3000);
+  };
 
   // Live ATS Score for top bar
   const atsScore = useMemo(() => {
     return calculateAtsScore(resumeData).totalScore;
   }, [resumeData]);
 
-  // Color for score badge
   const scoreBadgeColor =
     atsScore >= 80
       ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'
       : atsScore >= 55
       ? 'bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100'
       : 'bg-rose-50 text-rose-700 border-rose-300 hover:bg-rose-100';
+
+  // Check if resume is currently empty
+  const isResumeEmpty = !resumeData.personal.fullName && !resumeData.summary && resumeData.skills.length === 0;
 
   // Basic validation check for step 1
   const validateStep = (step) => {
@@ -123,6 +147,7 @@ const Builder = () => {
       setIsExportingDocx(true);
       const fileName = getResumeFileName(resumeData.personal.fullName, 'docx');
       await exportToDocx(resumeData, fileName);
+      showToast('Word (.docx) downloaded successfully!');
     } catch (err) {
       console.error('Failed to export DOCX:', err);
       alert('Failed to generate DOCX file. Please check console for details.');
@@ -131,8 +156,63 @@ const Builder = () => {
     }
   };
 
+  // Load sample demo profile
+  const handleLoadSample = () => {
+    loadSampleData();
+    showToast('Loaded demo resume data!');
+  };
+
+  // Confirm and reset resume
+  const handleConfirmReset = () => {
+    resetResume();
+    setShowResetModal(false);
+    setCurrentStep(1);
+    showToast('Resume cleared to default.');
+  };
+
   return (
     <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-5 right-5 z-50 bg-gray-900 text-white px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl flex items-center gap-2 animate-bounce">
+          <Sparkles className="w-4 h-4 text-amber-400" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Confirmation Modal for Reset */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-950/40 backdrop-blur-xs no-print">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-gray-100">
+            <div className="w-12 h-12 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center mb-4">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">
+              Reset All Resume Data?
+            </h3>
+            <p className="text-xs text-gray-600 leading-relaxed mb-6">
+              This will permanently delete all personal details, experience, education, and skills stored in your browser. This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowResetModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-700 border border-gray-300 hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReset}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 transition-colors shadow-2xs"
+              >
+                Yes, Clear All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Top Header & Action Buttons */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-4 border-b border-gray-200 no-print">
         <div>
@@ -185,6 +265,17 @@ const Builder = () => {
             </button>
           </div>
 
+          {/* Load Sample Data Demo Button */}
+          <button
+            type="button"
+            onClick={handleLoadSample}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 transition-colors shadow-2xs"
+            title="Populate complete sample data for demo"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Load Sample Data</span>
+          </button>
+
           {/* ATS Score quick pill */}
           <button
             type="button"
@@ -224,15 +315,15 @@ const Builder = () => {
             <span>{isExportingDocx ? 'Generating...' : 'Download DOCX'}</span>
           </button>
 
-          {/* Reset Button */}
+          {/* Reset / Clear All Button */}
           <button
             type="button"
-            onClick={resetResume}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-100 transition-colors"
-            title="Clear all fields"
+            onClick={() => setShowResetModal(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:text-rose-700 border border-rose-200 hover:bg-rose-50 transition-colors"
+            title="Clear all fields with confirmation"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset</span>
+            <span>Clear All</span>
           </button>
         </div>
       </div>
@@ -316,7 +407,7 @@ const Builder = () => {
             mobileTab === 'form' ? 'hidden lg:block' : 'block'
           }`}
         >
-          {/* ATS Score Panel (Collapsible on Desktop, shown on mobile if mobileTab === 'score') */}
+          {/* ATS Score Panel */}
           <div className={`no-print ${showAtsPanel || mobileTab === 'score' ? 'block' : 'hidden'}`}>
             <AtsScorePanel onClose={() => setShowAtsPanel(false)} />
           </div>
@@ -333,8 +424,28 @@ const Builder = () => {
           <div className={`w-full flex justify-center overflow-x-auto pb-4 ${mobileTab === 'score' ? 'hidden sm:flex' : 'flex'}`}>
             <div
               id="resume-preview-container"
-              className="bg-white border border-gray-200 shadow-md rounded-xl overflow-hidden w-full transition-all"
+              className="bg-white border border-gray-200 shadow-md rounded-xl overflow-hidden w-full transition-all relative"
             >
+              {/* Empty state hint */}
+              {isResumeEmpty && (
+                <div className="p-10 text-center bg-gray-50/80 border-b border-gray-200 no-print">
+                  <p className="text-xs font-semibold text-gray-700 mb-1">
+                    Your resume is currently empty
+                  </p>
+                  <p className="text-[11px] text-gray-500 mb-3">
+                    Start by filling your information on the left, or load our complete demo resume in one click.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleLoadSample}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-600 bg-white border border-indigo-200 hover:bg-indigo-50 shadow-2xs"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>Load Demo Profile</span>
+                  </button>
+                </div>
+              )}
+
               {selectedTemplate === 'classic' && <ClassicTemplate data={resumeData} />}
               {selectedTemplate === 'modern' && <ModernTemplate data={resumeData} />}
               {selectedTemplate === 'compact' && <CompactTemplate data={resumeData} />}
