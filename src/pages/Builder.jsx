@@ -11,15 +11,18 @@ import TemplateSelector from '../components/TemplateSelector';
 import ClassicTemplate from '../templates/ClassicTemplate';
 import ModernTemplate from '../templates/ModernTemplate';
 import CompactTemplate from '../templates/CompactTemplate';
+import { exportToDocx } from '../utils/docxExport';
+import { getResumeFileName } from '../utils/textUtils';
 import {
   ArrowLeft,
   ArrowRight,
-  CheckCircle,
   RotateCcw,
   Eye,
   Edit3,
-  Printer,
-  Sparkles
+  FileDown,
+  FileType,
+  Loader2,
+  CheckCircle2
 } from 'lucide-react';
 
 const Builder = () => {
@@ -28,6 +31,7 @@ const Builder = () => {
   const [errors, setErrors] = useState({});
   const [mobileTab, setMobileTab] = useState('form'); // 'form' | 'preview'
   const [selectedTemplate, setSelectedTemplate] = useState('classic'); // 'classic' | 'modern' | 'compact'
+  const [isExportingDocx, setIsExportingDocx] = useState(false);
 
   // Basic validation check for step 1
   const validateStep = (step) => {
@@ -82,24 +86,49 @@ const Builder = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handlePrint = () => {
+  // Text-based PDF download using browser print dialog with automatic file name
+  const handleDownloadPdf = () => {
+    const originalTitle = document.title;
+    const fileName = getResumeFileName(resumeData.personal.fullName, 'pdf');
+    // Browser uses document.title as default filename in 'Save as PDF'
+    document.title = fileName.replace('.pdf', '');
+
     window.print();
+
+    // Restore title after dialog closes
+    setTimeout(() => {
+      document.title = originalTitle;
+    }, 1500);
+  };
+
+  // ATS-friendly .docx download using the docx package
+  const handleDownloadDocx = async () => {
+    try {
+      setIsExportingDocx(true);
+      const fileName = getResumeFileName(resumeData.personal.fullName, 'docx');
+      await exportToDocx(resumeData, fileName);
+    } catch (err) {
+      console.error('Failed to export DOCX:', err);
+      alert('Failed to generate DOCX file. Please check console for details.');
+    } finally {
+      setIsExportingDocx(false);
+    }
   };
 
   return (
     <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      {/* Top Header & Mobile Tab Switcher */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-gray-200 no-print">
+      {/* Top Header & Action Buttons */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-4 border-b border-gray-200 no-print">
         <div>
           <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">
             ATS Resume Builder
           </h1>
           <p className="text-xs sm:text-sm text-gray-500">
-            Real-time synchronization. Single-column ATS templates.
+            Real-time synchronization. Text-based ATS PDF and DOCX export.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
+        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-between md:justify-end">
           {/* Mobile view switcher */}
           <div className="flex lg:hidden bg-gray-100 p-1 rounded-xl">
             <button
@@ -128,20 +157,38 @@ const Builder = () => {
             </button>
           </div>
 
+          {/* Download PDF Button */}
           <button
             type="button"
-            onClick={handlePrint}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs transition-all"
-            title="Print or export as PDF"
+            onClick={handleDownloadPdf}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+            title="Download text-based selectable PDF"
           >
-            <Printer className="w-3.5 h-3.5" />
-            <span>Print / PDF</span>
+            <FileDown className="w-4 h-4" />
+            <span>Download PDF</span>
           </button>
 
+          {/* Download DOCX Button */}
+          <button
+            type="button"
+            onClick={handleDownloadDocx}
+            disabled={isExportingDocx}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-gray-800 bg-white border border-gray-300 hover:bg-gray-50 hover:border-gray-400 shadow-2xs transition-all cursor-pointer disabled:opacity-60"
+            title="Download editable Microsoft Word document"
+          >
+            {isExportingDocx ? (
+              <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+            ) : (
+              <FileType className="w-4 h-4 text-indigo-600" />
+            )}
+            <span>{isExportingDocx ? 'Generating...' : 'Download DOCX'}</span>
+          </button>
+
+          {/* Reset Button */}
           <button
             type="button"
             onClick={resetResume}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-100 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-100 transition-colors"
             title="Clear all fields"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -199,14 +246,25 @@ const Builder = () => {
                   <ArrowRight className="w-4 h-4" />
                 </button>
               ) : (
-                <button
-                  type="button"
-                  onClick={handlePrint}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition-all"
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  <span>Download / Print PDF</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleDownloadPdf}
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition-all"
+                  >
+                    <FileDown className="w-4 h-4" />
+                    <span>Download PDF</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDownloadDocx}
+                    disabled={isExportingDocx}
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-gray-800 bg-white border border-gray-300 hover:bg-gray-50 shadow-sm transition-all"
+                  >
+                    <FileType className="w-4 h-4 text-indigo-600" />
+                    <span>DOCX</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -218,6 +276,39 @@ const Builder = () => {
             mobileTab === 'form' ? 'hidden lg:block' : 'block'
           }`}
         >
+          {/* Top Preview Action Row */}
+          <div className="no-print bg-white rounded-2xl border border-gray-200 p-4 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div>
+              <span className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                Ready for ATS Screening
+              </span>
+              <p className="text-[11px] text-gray-500 mt-0.5">
+                Single-column text layout. No images or unreadable tables.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-2xs"
+              >
+                <FileDown className="w-3.5 h-3.5" />
+                <span>Download PDF</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadDocx}
+                disabled={isExportingDocx}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-gray-700 bg-gray-50 border border-gray-300 hover:bg-gray-100 transition-colors"
+              >
+                <FileType className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Download DOCX</span>
+              </button>
+            </div>
+          </div>
+
           {/* Template Selector Card (hidden on print) */}
           <div className="no-print">
             <TemplateSelector

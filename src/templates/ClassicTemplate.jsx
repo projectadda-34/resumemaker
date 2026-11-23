@@ -4,14 +4,12 @@ import { parseBulletPoints } from '../utils/textUtils';
 const ClassicTemplate = ({ data }) => {
   const { personal, summary, experience, education, skills, projects, certifications } = data;
 
-  // Filter non-empty items
   const validExperience = experience?.filter((exp) => exp.company || exp.role) || [];
   const validEducation = education?.filter((edu) => edu.school || edu.degree) || [];
   const validSkills = skills?.filter(Boolean) || [];
   const validProjects = projects?.filter((proj) => proj.name) || [];
   const validCertifications = certifications?.filter((cert) => cert.name) || [];
 
-  // Contact items for centered header
   const contactItems = [
     personal?.phone,
     personal?.email,
@@ -24,7 +22,7 @@ const ClassicTemplate = ({ data }) => {
   return (
     <div className="bg-white text-black font-serif p-8 sm:p-12 w-full max-w-[210mm] min-h-[297mm] mx-auto text-[13px] leading-relaxed shadow-sm print:shadow-none print:p-0">
       {/* Centered Name and Contact Information */}
-      <div className="text-center pb-3">
+      <div className="text-center pb-3 resume-entry">
         <h1 className="text-2xl font-bold tracking-wide uppercase text-black mb-1">
           {personal?.fullName || 'YOUR NAME'}
         </h1>
@@ -37,7 +35,7 @@ const ClassicTemplate = ({ data }) => {
 
       {/* Summary */}
       {summary?.trim() && (
-        <div className="mt-4">
+        <div className="mt-4 resume-entry">
           <h2 className="text-sm font-bold uppercase tracking-wider text-black border-b border-black pb-0.5 mb-1.5">
             Summary
           </h2>
@@ -59,7 +57,7 @@ const ClassicTemplate = ({ data }) => {
               const dateStr = [exp.startDate, exp.current ? 'Present' : exp.endDate].filter(Boolean).join(' – ');
 
               return (
-                <div key={idx}>
+                <div key={idx} className="resume-entry">
                   <div className="flex justify-between items-baseline font-bold text-xs">
                     <span>{exp.role || 'Position Title'}</span>
                     <span className="font-normal">{dateStr}</span>
@@ -96,7 +94,7 @@ const ClassicTemplate = ({ data }) => {
               const dateStr = [edu.startDate, edu.endDate].filter(Boolean).join(' – ');
 
               return (
-                <div key={idx}>
+                <div key={idx} className="resume-entry">
                   <div className="flex justify-between items-baseline font-bold text-xs">
                     <span>{edu.degree || 'Degree'}</span>
                     <span className="font-normal">{dateStr}</span>
@@ -114,7 +112,7 @@ const ClassicTemplate = ({ data }) => {
 
       {/* Skills */}
       {validSkills.length > 0 && (
-        <div className="mt-4">
+        <div className="mt-4 resume-entry">
           <h2 className="text-sm font-bold uppercase tracking-wider text-black border-b border-black pb-0.5 mb-1.5">
             Skills
           </h2>
@@ -135,7 +133,7 @@ const ClassicTemplate = ({ data }) => {
               const bullets = parseBulletPoints(proj.description);
 
               return (
-                <div key={idx}>
+                <div key={idx} className="resume-entry">
                   <div className="flex justify-between items-baseline font-bold text-xs">
                     <span>{proj.name}</span>
                     {proj.link && (
@@ -160,7 +158,7 @@ const ClassicTemplate = ({ data }) => {
 
       {/* Certifications */}
       {validCertifications.length > 0 && (
-        <div className="mt-4">
+        <div className="mt-4 resume-entry">
           <h2 className="text-sm font-bold uppercase tracking-wider text-black border-b border-black pb-0.5 mb-1.5">
             Certifications
           </h2>

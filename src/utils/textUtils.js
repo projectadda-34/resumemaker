@@ -24,3 +24,14 @@ export const hasContactInfo = (personal) => {
     personal.website
   );
 };
+
+/**
+ * Generates an ATS-compliant, recruiter-standard filename like "FullName_Resume.pdf"
+ */
+export const getResumeFileName = (fullName, ext = 'pdf') => {
+  const cleanName = (fullName || 'My')
+    .trim()
+    .replace(/[^a-zA-Z0-9\s_-]/g, '')
+    .replace(/\s+/g, '_');
+  return `${cleanName}_Resume.${ext}`;
+};

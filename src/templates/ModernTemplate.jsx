@@ -22,7 +22,7 @@ const ModernTemplate = ({ data }) => {
   return (
     <div className="bg-white text-black font-sans p-8 sm:p-12 w-full max-w-[210mm] min-h-[297mm] mx-auto text-[13px] leading-relaxed shadow-sm print:shadow-none print:p-0">
       {/* Left-Aligned Header */}
-      <div className="pb-4 border-b-2 border-black">
+      <div className="pb-4 border-b-2 border-black resume-entry">
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight uppercase text-black">
           {personal?.fullName || 'YOUR NAME'}
         </h1>
@@ -40,7 +40,7 @@ const ModernTemplate = ({ data }) => {
 
       {/* Summary */}
       {summary?.trim() && (
-        <div className="mt-5">
+        <div className="mt-5 resume-entry">
           <h2 className="text-xs font-black uppercase tracking-wider text-black pb-1 mb-1 border-b border-black">
             Summary
           </h2>
@@ -62,7 +62,7 @@ const ModernTemplate = ({ data }) => {
               const dateStr = [exp.startDate, exp.current ? 'Present' : exp.endDate].filter(Boolean).join(' – ');
 
               return (
-                <div key={idx}>
+                <div key={idx} className="resume-entry">
                   <div className="flex justify-between items-baseline text-xs">
                     <span className="font-bold text-black">{exp.role || 'Position Title'}</span>
                     <span className="text-black font-medium text-[11px]">{dateStr}</span>
@@ -99,7 +99,7 @@ const ModernTemplate = ({ data }) => {
               const dateStr = [edu.startDate, edu.endDate].filter(Boolean).join(' – ');
 
               return (
-                <div key={idx}>
+                <div key={idx} className="resume-entry">
                   <div className="flex justify-between items-baseline text-xs">
                     <span className="font-bold text-black">{edu.degree || 'Degree'}</span>
                     <span className="text-black font-medium text-[11px]">{dateStr}</span>
@@ -117,7 +117,7 @@ const ModernTemplate = ({ data }) => {
 
       {/* Skills */}
       {validSkills.length > 0 && (
-        <div className="mt-5">
+        <div className="mt-5 resume-entry">
           <h2 className="text-xs font-black uppercase tracking-wider text-black pb-1 mb-1.5 border-b border-black">
             Skills
           </h2>
@@ -138,7 +138,7 @@ const ModernTemplate = ({ data }) => {
               const bullets = parseBulletPoints(proj.description);
 
               return (
-                <div key={idx}>
+                <div key={idx} className="resume-entry">
                   <div className="flex justify-between items-baseline text-xs">
                     <span className="font-bold text-black">{proj.name}</span>
                     {proj.link && <span className="text-[11px] text-black font-medium">{proj.link}</span>}
@@ -161,7 +161,7 @@ const ModernTemplate = ({ data }) => {
 
       {/* Certifications */}
       {validCertifications.length > 0 && (
-        <div className="mt-5">
+        <div className="mt-5 resume-entry">
           <h2 className="text-xs font-black uppercase tracking-wider text-black pb-1 mb-1.5 border-b border-black">
             Certifications
           </h2>

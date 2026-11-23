@@ -22,7 +22,7 @@ const CompactTemplate = ({ data }) => {
   return (
     <div className="bg-white text-black font-sans p-6 sm:p-8 w-full max-w-[210mm] min-h-[297mm] mx-auto text-[11.5px] leading-snug shadow-sm print:shadow-none print:p-0">
       {/* Header */}
-      <div className="text-center pb-2 border-b border-black">
+      <div className="text-center pb-2 border-b border-black resume-entry">
         <h1 className="text-xl font-bold tracking-tight uppercase text-black">
           {personal?.fullName || 'YOUR NAME'}
         </h1>
@@ -35,7 +35,7 @@ const CompactTemplate = ({ data }) => {
 
       {/* Summary */}
       {summary?.trim() && (
-        <div className="mt-2.5">
+        <div className="mt-2.5 resume-entry">
           <h2 className="text-[11px] font-bold uppercase tracking-wider text-black border-b border-black pb-0.5 mb-1">
             Summary
           </h2>
@@ -57,7 +57,7 @@ const CompactTemplate = ({ data }) => {
               const dateStr = [exp.startDate, exp.current ? 'Present' : exp.endDate].filter(Boolean).join(' – ');
 
               return (
-                <div key={idx}>
+                <div key={idx} className="resume-entry">
                   <div className="flex justify-between items-baseline text-[11.5px] font-bold">
                     <span>
                       {exp.role || 'Position Title'}
@@ -92,7 +92,7 @@ const CompactTemplate = ({ data }) => {
               const dateStr = [edu.startDate, edu.endDate].filter(Boolean).join(' – ');
 
               return (
-                <div key={idx} className="flex justify-between items-baseline text-[11px]">
+                <div key={idx} className="flex justify-between items-baseline text-[11px] resume-entry">
                   <span>
                     <strong className="font-semibold">{edu.degree || 'Degree'}</strong>
                     {edu.school && ` — ${edu.school}`}
@@ -108,7 +108,7 @@ const CompactTemplate = ({ data }) => {
 
       {/* Skills */}
       {validSkills.length > 0 && (
-        <div className="mt-2.5">
+        <div className="mt-2.5 resume-entry">
           <h2 className="text-[11px] font-bold uppercase tracking-wider text-black border-b border-black pb-0.5 mb-1">
             Skills
           </h2>
@@ -129,7 +129,7 @@ const CompactTemplate = ({ data }) => {
               const bullets = parseBulletPoints(proj.description);
 
               return (
-                <div key={idx}>
+                <div key={idx} className="resume-entry">
                   <div className="flex justify-between items-baseline text-[11px] font-semibold">
                     <span>{proj.name}</span>
                     {proj.link && <span className="font-normal text-[10px] text-black">{proj.link}</span>}
@@ -152,7 +152,7 @@ const CompactTemplate = ({ data }) => {
 
       {/* Certifications */}
       {validCertifications.length > 0 && (
-        <div className="mt-2.5">
+        <div className="mt-2.5 resume-entry">
           <h2 className="text-[11px] font-bold uppercase tracking-wider text-black border-b border-black pb-0.5 mb-1">
             Certifications
           </h2>
